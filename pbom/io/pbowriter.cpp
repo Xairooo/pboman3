@@ -1,6 +1,8 @@
 #include "pbowriter.h"
 #include <QTemporaryFile>
 #include <QCryptographicHash>
+#include <QDir>
+
 #include "pbofile.h"
 #include "pboheaderio.h"
 #include "pboioexception.h"
@@ -129,11 +131,20 @@ namespace pboman3 {
         const PboHeaderIO io(file);
         io.writeEntry(PboEntry::makeSignature());
 
+        bool prefixFound = false;        
+
         for (const QSharedPointer<PboHeader>& header : *headers_) {
             if (cancel()) {
                 break;
             }
             io.writeHeader(*header);
+            if (header->name == "prefix") {
+                prefixFound = true;                
+            }
+        }
+
+        if (!prefixFound) {
+            io.writeHeader(*new PboHeader("prefix", file->fileName().right(file->fileName().lastIndexOf("/")).remove(".pbo")));
         }
 
         if (cancel()) {
